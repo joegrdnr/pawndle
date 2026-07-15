@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pawndle builder</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Archivo:wght@400;600;800&family=Spline+Sans+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --felt:#14382B; --felt-deep:#0C271D;
+    --card:#F5EDDC; --card-edge:#E0D2B4;
+    --ink:#2A2118; --ink-soft:#5C5140;
+    --brass:#C9A227; --brass-deep:#8F711A;
+    --stamp:#B3382C; --win:#2E7D4F;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Archivo',system-ui,sans-serif;
+    background:radial-gradient(1200px 700px at 50% -10%, #1B4A39 0%, var(--felt) 55%, var(--felt-deep) 100%);
+    color:var(--card);
+    min-height:100vh;
+    padding:1.5rem 1rem 4rem;
+  }
+  button{font-family:inherit;cursor:pointer}
+  :focus-visible{outline:3px solid var(--brass);outline-offset:2px;border-radius:4px}
+  header{text-align:center;margin-bottom:1.6rem}
+  h1{font-family:'Alfa Slab One',serif;font-size:1.9rem;letter-spacing:.03em;text-shadow:0 3px 0 rgba(0,0,0,.35)}
+  h1 .gold{color:var(--brass)}
+  header p{font-family:'Spline Sans Mono',monospace;font-size:.75rem;color:rgba(245,237,220,.7);margin-top:.35rem;letter-spacing:.06em}
+
+  .wrap{max-width:1020px;margin:0 auto;display:grid;gap:1.3rem}
+
+  .panel{
+    background:var(--card);color:var(--ink);
+    border-radius:10px;padding:1.3rem 1.3rem 1.4rem;
+    box-shadow:0 8px 22px rgba(0,0,0,.4);
+  }
+  .panel h2{
+    font-family:'Alfa Slab One',serif;font-size:1.1rem;margin-bottom:1rem;
+    text-transform:lowercase;
+  }
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:.85rem 1rem}
+  label{display:block;font-family:'Spline Sans Mono',monospace;font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);margin-bottom:.3rem}
+  input[type=text],input[type=number],input[type=date],input[type=url],select,textarea{
+    width:100%;padding:.55rem .6rem;
+    border:1.5px solid var(--card-edge);border-radius:6px;
+    background:#FFFDF6;color:var(--ink);
+    font-family:'Archivo',sans-serif;font-size:.92rem;
+  }
+  textarea{font-family:'Spline Sans Mono',monospace;font-size:.8rem;min-height:110px}
+  input:focus,select:focus,textarea:focus{border-color:var(--brass);outline:none}
+  .checks{display:flex;gap:1.4rem;align-items:center;padding-top:1.4rem}
+  .checks label{display:flex;align-items:center;gap:.45rem;margin:0;cursor:pointer}
+  .checks input{width:17px;height:17px;accent-color:var(--brass)}
+  .private label{color:var(--stamp)}
+  .private input{border-color:#E5B7B1}
+  .hint{font-size:.72rem;color:var(--ink-soft);margin-top:.3rem;font-family:'Spline Sans Mono',monospace}
+
+  .img-row{display:grid;grid-template-columns:1fr 120px;gap:1rem;align-items:start}
+  .preview{
+    width:120px;aspect-ratio:4/3;border-radius:6px;overflow:hidden;
+    background:#DCCFAF;border:1.5px solid var(--card-edge);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Spline Sans Mono',monospace;font-size:.62rem;color:var(--ink-soft);
+    text-align:center;padding:.2rem;
+  }
+  .preview img{width:100%;height:100%;object-fit:cover;display:block}
+  .preview.missing{border-color:var(--stamp);color:var(--stamp)}
+
+  .btn{
+    background:var(--ink);color:var(--card);border:none;border-radius:7px;
+    font-weight:800;font-size:.92rem;padding:.7rem 1.3rem;
+    box-shadow:0 3px 0 rgba(0,0,0,.3);
+  }
+  .btn:hover{transform:translateY(-1px)}
+  .btn.gold{background:var(--brass);color:var(--ink)}
+  .btn.red{background:var(--stamp);color:#fff}
+  .btn.quiet{background:transparent;color:var(--ink);border:2px solid var(--ink);box-shadow:none;font-weight:600}
+  .btn-row{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:1.1rem;align-items:center}
+  .form-msg{font-weight:700;font-size:.85rem;min-height:1.1rem;margin-top:.6rem}
+  .form-msg.bad{color:var(--stamp)}
+  .form-msg.good{color:var(--win)}
+
+  .chips{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem}
+  .chip{
+    font-family:'Spline Sans Mono',monospace;font-size:.72rem;
+    background:rgba(201,162,39,.16);border:1px solid var(--brass);
+    color:var(--ink);border-radius:20px;padding:.25rem .7rem;
+  }
+  .chip b{color:var(--brass-deep)}
+  .chip.short{border-color:var(--stamp);background:rgba(179,56,44,.08)}
+  .chip.short b{color:var(--stamp)}
+
+  table{width:100%;border-collapse:collapse;font-size:.85rem}
+  th{
+    font-family:'Spline Sans Mono',monospace;font-size:.64rem;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--ink-soft);text-align:left;
+    padding:.4rem .5rem;border-bottom:2px solid var(--card-edge);
+  }
+  td{padding:.45rem .5rem;border-bottom:1px solid var(--card-edge);vertical-align:middle}
+  td.num{font-family:'Spline Sans Mono',monospace;font-weight:700;white-space:nowrap}
+  .thumb{width:52px;height:39px;border-radius:4px;object-fit:cover;background:#DCCFAF;display:block}
+  .rowbtn{
+    background:none;border:1.5px solid var(--ink);border-radius:5px;
+    font-size:.72rem;font-weight:700;padding:.25rem .55rem;color:var(--ink);
+  }
+  .rowbtn.del{border-color:var(--stamp);color:var(--stamp)}
+  .table-scroll{overflow-x:auto}
+  .empty-note{color:var(--ink-soft);font-size:.9rem;padding:.8rem 0}
+  .mini{max-width:130px}
+  .import-zone{display:grid;gap:.8rem}
+  #editing-banner{
+    background:rgba(201,162,39,.18);border:1.5px dashed var(--brass);
+    border-radius:6px;padding:.5rem .8rem;font-size:.85rem;font-weight:700;
+    margin-bottom:.9rem;display:none;
+  }
+  #editing-banner.on{display:block}
+  @media (max-width:560px){ .img-row{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>PAWN<span class="gold">DLE</span> builder</h1>
+  <p>private data entry — nothing here is linked from the game</p>
+</header>
+
+<div class="wrap">
+
+  <!-- FORM -->
+  <section class="panel">
+    <h2>add an item</h2>
+    <div id="editing-banner">Editing an existing item — “Save changes” will overwrite it.</div>
+    <div class="grid">
+      <div>
+        <label for="f-id">id (blank = auto)</label>
+        <input type="text" id="f-id" placeholder="auto-generated">
+      </div>
+      <div>
+        <label for="f-title">title *</label>
+        <input type="text" id="f-title" placeholder="Sega Mega Drive II, boxed">
+      </div>
+      <div>
+        <label for="f-cat">category *</label>
+        <select id="f-cat"></select>
+        <input type="text" id="f-newcat" placeholder="new category name" style="margin-top:.4rem;display:none">
+      </div>
+      <div>
+        <label for="f-price">sold price *</label>
+        <input type="number" id="f-price" min="0.01" step="0.01" placeholder="42.00">
+      </div>
+      <div>
+        <label for="f-currency">currency *</label>
+        <input type="text" id="f-currency" value="GBP" maxlength="3">
+      </div>
+      <div>
+        <label for="f-date">sold date *</label>
+        <input type="date" id="f-date">
+      </div>
+      <div>
+        <label for="f-condition">condition *</label>
+        <input type="text" id="f-condition" list="cond-list" placeholder="used">
+        <datalist id="cond-list">
+          <option value="new"><option value="like new"><option value="used"><option value="for parts">
+        </datalist>
+      </div>
+      <div>
+        <label for="f-saletype">sale type *</label>
+        <select id="f-saletype">
+          <option value="auction">auction</option>
+          <option value="buy-it-now">buy-it-now</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="img-row" style="margin-top:1rem">
+      <div>
+        <label for="f-image">image filename * <span style="text-transform:none">(file already saved in /images)</span></label>
+        <input type="text" id="f-image" placeholder="gm-megadrive2.jpg">
+        <p class="hint">the form records the filename only — it does not upload</p>
+      </div>
+      <div class="preview" id="preview">type a filename to preview</div>
+    </div>
+
+    <div class="checks">
+      <label><input type="checkbox" id="f-shipping"> shipping included</label>
+      <label><input type="checkbox" id="f-lot"> job lot</label>
+    </div>
+
+    <div class="grid private" style="margin-top:1rem">
+      <div style="grid-column:1/-1">
+        <label for="f-url">listing url — private, backup export only</label>
+        <input type="url" id="f-url" placeholder="https://www.ebay.co.uk/itm/…">
+        <p class="hint">proof link. stripped from “export game data”; only included in the backup file.</p>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn gold" id="btn-add">Add item</button>
+      <button class="btn quiet" id="btn-cancel-edit" style="display:none">Cancel edit</button>
+      <button class="btn quiet" id="btn-clear-form">Clear form</button>
+    </div>
+    <p class="form-msg" id="form-msg"></p>
+  </section>
+
+  <!-- BATCH -->
+  <section class="panel">
+    <h2>working batch <span style="font-family:'Spline Sans Mono',monospace;font-size:.8rem;color:var(--ink-soft)">(saved in this browser as you go)</span></h2>
+    <div class="chips" id="chips"></div>
+    <div class="table-scroll">
+      <table id="batch-table">
+        <thead>
+          <tr><th></th><th>title</th><th>category</th><th>price</th><th>date</th><th>sale</th><th></th></tr>
+        </thead>
+        <tbody id="batch-body"></tbody>
+      </table>
+    </div>
+    <p class="empty-note" id="empty-note">Nothing in the batch yet. Add items above or import an existing items.json below.</p>
+    <div class="btn-row">
+      <button class="btn red" id="btn-wipe">Delete entire batch</button>
+    </div>
+  </section>
+
+  <!-- SETTINGS + EXPORT -->
+  <section class="panel">
+    <h2>export</h2>
+    <div class="grid" style="margin-bottom:.4rem">
+      <div class="mini">
+        <label for="f-gap">minPriceGap</label>
+        <input type="number" id="f-gap" min="0" step="0.5" value="5">
+        <p class="hint">two items only get paired if their prices differ by more than this</p>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn gold" id="btn-export-game">Export game data (items.json)</button>
+      <button class="btn" id="btn-export-backup">Export backup (with listing urls)</button>
+    </div>
+    <p class="hint" style="margin-top:.6rem">commit items.json to the repo. the backup file includes listingUrl — keep it private and never commit it.</p>
+  </section>
+
+  <!-- IMPORT -->
+  <section class="panel">
+    <h2>import existing data</h2>
+    <div class="import-zone">
+      <div>
+        <label for="import-file">pick a file (items.json or a backup export)</label>
+        <input type="file" id="import-file" accept=".json,application/json">
+      </div>
+      <div>
+        <label for="import-paste">or paste json</label>
+        <textarea id="import-paste" placeholder='{"settings":{"minPriceGap":5},"items":[…]}  — a bare array also works'></textarea>
+      </div>
+      <div class="btn-row" style="margin-top:0">
+        <button class="btn" id="btn-import-replace">Import — replace batch</button>
+        <button class="btn quiet" id="btn-import-merge">Import — merge into batch</button>
+      </div>
+      <p class="form-msg" id="import-msg"></p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+const LS_KEY = "pawndle_admin_batch";
+const LS_GAP = "pawndle_admin_gap";
+const NEW_CAT = "__new__";
+const $ = id => document.getElementById(id);
+
+let batch = [];
+let editIndex = -1;
+
+/* ---------- storage ---------- */
+function load(){
+  try{ batch = JSON.parse(localStorage.getItem(LS_KEY)) || []; }catch(e){ batch = []; }
+  const g = localStorage.getItem(LS_GAP);
+  if (g !== null) $("f-gap").value = g;
+}
+function save(){
+  localStorage.setItem(LS_KEY, JSON.stringify(batch));
+  localStorage.setItem(LS_GAP, $("f-gap").value);
+}
+
+/* ---------- helpers ---------- */
+function esc(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function categories(){
+  return [...new Set(batch.map(i => i.category))].sort();
+}
+function autoId(cat){
+  const stem = (cat||"item").toLowerCase().replace(/[^a-z0-9]+/g,"").slice(0,4) || "item";
+  let n = 1, id;
+  const taken = new Set(batch.map(i => i.id));
+  do { id = stem + "-" + String(n).padStart(3,"0"); n++; } while (taken.has(id));
+  return id;
+}
+function money(n, cur){
+  try{ return new Intl.NumberFormat("en-GB",{style:"currency",currency:cur||"GBP"}).format(n); }
+  catch(e){ return (cur||"") + " " + Number(n).toFixed(2); }
+}
+function msg(el, text, ok){
+  el.textContent = text;
+  el.className = "form-msg " + (ok ? "good" : "bad");
+  if (text) setTimeout(() => { if (el.textContent === text) el.textContent = ""; }, 4500);
+}
+
+/* ---------- category dropdown ---------- */
+function renderCatSelect(keep){
+  const sel = $("f-cat");
+  const current = keep !== undefined ? keep : sel.value;
+  sel.innerHTML = "";
+  categories().forEach(c => {
+    const o = document.createElement("option");
+    o.value = c; o.textContent = c;
+    sel.appendChild(o);
+  });
+  const o = document.createElement("option");
+  o.value = NEW_CAT; o.textContent = "+ new category…";
+  sel.appendChild(o);
+  if (current && [...sel.options].some(x => x.value === current)) sel.value = current;
+  else if (categories().length) sel.value = categories()[0];
+  else sel.value = NEW_CAT;
+  $("f-newcat").style.display = sel.value === NEW_CAT ? "block" : "none";
+}
+$("f-cat").addEventListener("change", () => {
+  $("f-newcat").style.display = $("f-cat").value === NEW_CAT ? "block" : "none";
+});
+
+/* ---------- image preview ---------- */
+let previewTimer = null;
+function updatePreview(){
+  const box = $("preview");
+  const name = $("f-image").value.trim();
+  box.classList.remove("missing");
+  if (!name){ box.innerHTML = "type a filename to preview"; return; }
+  const img = new Image();
+  img.alt = "";
+  img.onload = () => { box.innerHTML = ""; box.appendChild(img); };
+  img.onerror = () => {
+    box.classList.add("missing");
+    box.innerHTML = "image not found:<br>images/" + esc(name);
+  };
+  img.src = "images/" + name;
+}
+$("f-image").addEventListener("input", () => {
+  clearTimeout(previewTimer);
+  previewTimer = setTimeout(updatePreview, 350);
+});
+
+/* ---------- form <-> item ---------- */
+function readForm(){
+  const catSel = $("f-cat").value;
+  const category = (catSel === NEW_CAT ? $("f-newcat").value : catSel).trim().toLowerCase();
+  return {
+    id: $("f-id").value.trim(),
+    title: $("f-title").value.trim(),
+    category,
+    image: $("f-image").value.trim(),
+    soldPrice: parseFloat($("f-price").value),
+    currency: $("f-currency").value.trim().toUpperCase(),
+    soldDate: $("f-date").value,
+    condition: $("f-condition").value.trim(),
+    saleType: $("f-saletype").value,
+    shippingIncluded: $("f-shipping").checked,
+    isLot: $("f-lot").checked,
+    listingUrl: $("f-url").value.trim()
+  };
+}
+function validate(item){
+  if (!item.title) return "title is required";
+  if (!item.category) return "category is required";
+  if (!item.image) return "image filename is required";
+  if (!(item.soldPrice > 0)) return "sold price must be a positive number";
+  if (!item.currency) return "currency is required";
+  if (!item.soldDate) return "sold date is required";
+  if (!item.condition) return "condition is required";
+  if (!item.saleType) return "sale type is required";
+  if (item.id && batch.some((b,i) => b.id === item.id && i !== editIndex)) return "that id is already in the batch";
+  return null;
+}
+function fillForm(item){
+  $("f-id").value = item.id || "";
+  $("f-title").value = item.title || "";
+  renderCatSelect(item.category);
+  $("f-newcat").value = "";
+  $("f-image").value = item.image || "";
+  $("f-price").value = item.soldPrice != null ? item.soldPrice : "";
+  $("f-currency").value = item.currency || "GBP";
+  $("f-date").value = (item.soldDate || "").slice(0,10);
+  $("f-condition").value = item.condition || "";
+  $("f-saletype").value = item.saleType === "buy-it-now" ? "buy-it-now" : "auction";
+  $("f-shipping").checked = !!item.shippingIncluded;
+  $("f-lot").checked = !!item.isLot;
+  $("f-url").value = item.listingUrl || "";
+  updatePreview();
+}
+function clearForm(){
+  fillForm({ currency:"GBP" });
+  $("f-id").value = "";
+  editIndex = -1;
+  $("editing-banner").classList.remove("on");
+  $("btn-cancel-edit").style.display = "none";
+  $("btn-add").textContent = "Add item";
+}
+
+/* ---------- add / edit / delete ---------- */
+$("btn-add").addEventListener("click", () => {
+  const item = readForm();
+  const err = validate(item);
+  if (err){ msg($("form-msg"), err, false); return; }
+  if (!item.id) item.id = autoId(item.category);
+  if (editIndex >= 0){
+    batch[editIndex] = item;
+    msg($("form-msg"), "Saved changes to " + item.id + ".", true);
+  } else {
+    batch.push(item);
+    msg($("form-msg"), "Added " + item.id + " — batch is " + batch.length + " items.", true);
+  }
+  save();
+  const keepCat = item.category;
+  clearForm();
+  renderCatSelect(keepCat);
+  renderBatch();
+});
+$("btn-clear-form").addEventListener("click", clearForm);
+$("btn-cancel-edit").addEventListener("click", clearForm);
+
+function startEdit(i){
+  editIndex = i;
+  fillForm(batch[i]);
+  $("editing-banner").classList.add("on");
+  $("btn-cancel-edit").style.display = "inline-block";
+  $("btn-add").textContent = "Save changes";
+  window.scrollTo({ top:0, behavior:"smooth" });
+}
+function del(i){
+  if (!confirm("Delete “" + batch[i].title + "” from the batch?")) return;
+  batch.splice(i,1);
+  if (editIndex === i) clearForm();
+  save();
+  renderCatSelect();
+  renderBatch();
+}
+
+$("btn-wipe").addEventListener("click", () => {
+  if (!batch.length) return;
+  if (!confirm("Delete the entire batch (" + batch.length + " items) from this browser? Export first if you want to keep it.")) return;
+  batch = [];
+  save();
+  clearForm();
+  renderCatSelect();
+  renderBatch();
+});
+
+/* ---------- batch render ---------- */
+function renderBatch(){
+  const body = $("batch-body");
+  body.innerHTML = "";
+  $("empty-note").style.display = batch.length ? "none" : "block";
+
+  const chips = $("chips");
+  chips.innerHTML = "";
+  categories().forEach(c => {
+    const n = batch.filter(i => i.category === c).length;
+    const chip = document.createElement("span");
+    chip.className = "chip" + (n < 20 ? " short" : "");
+    chip.innerHTML = esc(c) + " <b>" + n + "</b>" + (n < 20 ? " / 20" : "");
+    chips.appendChild(chip);
+  });
+  if (batch.length){
+    const total = document.createElement("span");
+    total.className = "chip";
+    total.innerHTML = "total <b>" + batch.length + "</b>";
+    chips.appendChild(total);
+  }
+
+  batch.forEach((item, i) => {
+    const tr = document.createElement("tr");
+    const td = h => { const t = document.createElement("td"); t.innerHTML = h; return t; };
+
+    const thumbTd = document.createElement("td");
+    const img = document.createElement("img");
+    img.className = "thumb"; img.alt = "";
+    img.onerror = () => { img.removeAttribute("src"); img.title = "image not found"; };
+    img.src = "images/" + item.image;
+    thumbTd.appendChild(img);
+    tr.appendChild(thumbTd);
+
+    tr.appendChild(td(esc(item.title)));
+    tr.appendChild(td(esc(item.category)));
+    const priceTd = td(esc(money(item.soldPrice, item.currency)));
+    priceTd.className = "num";
+    tr.appendChild(priceTd);
+    tr.appendChild(td(esc((item.soldDate||"").slice(0,10))));
+    tr.appendChild(td(esc(item.saleType) + (item.isLot ? " · lot" : "")));
+
+    const act = document.createElement("td");
+    const be = document.createElement("button");
+    be.className = "rowbtn"; be.textContent = "Edit";
+    be.addEventListener("click", () => startEdit(i));
+    const bd = document.createElement("button");
+    bd.className = "rowbtn del"; bd.textContent = "Delete";
+    bd.style.marginLeft = ".4rem";
+    bd.addEventListener("click", () => del(i));
+    act.appendChild(be); act.appendChild(bd);
+    tr.appendChild(act);
+
+    body.appendChild(tr);
+  });
+}
+
+/* ---------- import ---------- */
+function parseImport(text){
+  const data = JSON.parse(text);
+  const items = Array.isArray(data) ? data : (data.items || []);
+  if (!Array.isArray(items)) throw new Error("no items array found");
+  if (!Array.isArray(data) && data.settings && data.settings.minPriceGap != null){
+    $("f-gap").value = data.settings.minPriceGap;
+  }
+  return items.map(i => Object.assign({ listingUrl:"" }, i));
+}
+function doImport(text, replace){
+  try{
+    const items = parseImport(text);
+    if (replace){
+      batch = items;
+    } else {
+      const ids = new Set(batch.map(i => i.id));
+      let added = 0;
+      items.forEach(i => {
+        if (i.id && ids.has(i.id)) return;
+        batch.push(i); added++;
+      });
+      msg($("import-msg"), "Merged " + added + " new item(s); duplicates by id skipped.", true);
+    }
+    if (replace) msg($("import-msg"), "Imported " + items.length + " item(s), replacing the batch.", true);
+    save();
+    clearForm();
+    renderCatSelect();
+    renderBatch();
+  }catch(e){
+    msg($("import-msg"), "Couldn't read that JSON: " + e.message, false);
+  }
+}
+function importFromInputs(replace){
+  const file = $("import-file").files[0];
+  const pasted = $("import-paste").value.trim();
+  if (file){
+    const r = new FileReader();
+    r.onload = () => doImport(r.result, replace);
+    r.onerror = () => msg($("import-msg"), "Couldn't read that file.", false);
+    r.readAsText(file);
+  } else if (pasted){
+    doImport(pasted, replace);
+  } else {
+    msg($("import-msg"), "Pick a file or paste JSON first.", false);
+  }
+}
+$("btn-import-replace").addEventListener("click", () => importFromInputs(true));
+$("btn-import-merge").addEventListener("click", () => importFromInputs(false));
+
+/* ---------- export ---------- */
+function download(filename, text){
+  const blob = new Blob([text], { type:"application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+$("btn-export-game").addEventListener("click", () => {
+  if (!batch.length){ msg($("import-msg"), "Batch is empty — nothing to export.", false); return; }
+  const items = batch.map(i => {
+    const copy = Object.assign({}, i);
+    delete copy.listingUrl; // never ships in the public file
+    return copy;
+  });
+  const out = { settings:{ minPriceGap: parseFloat($("f-gap").value) || 5 }, items };
+  save();
+  download("items.json", JSON.stringify(out, null, 2));
+});
+$("btn-export-backup").addEventListener("click", () => {
+  if (!batch.length){ msg($("import-msg"), "Batch is empty — nothing to export.", false); return; }
+  const out = {
+    exportedAt: new Date().toISOString(),
+    settings:{ minPriceGap: parseFloat($("f-gap").value) || 5 },
+    items: batch
+  };
+  save();
+  const stamp = new Date().toISOString().slice(0,10);
+  download("pawndle-backup-" + stamp + ".json", JSON.stringify(out, null, 2));
+});
+$("f-gap").addEventListener("change", save);
+
+/* ---------- boot ---------- */
+load();
+renderCatSelect();
+renderBatch();
+clearForm();
+
+})();
+</script>
+</body>
+</html>
